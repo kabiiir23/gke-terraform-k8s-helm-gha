@@ -1,0 +1,79 @@
+name: GKE CI/CD Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  # GCP Project ID
+  PROJECT_ID:
+  # GKE Cluster name
+  CLUSTER_NAME:
+  # GCP Region
+  REGION:
+  # GKE Cluster zone
+  ZONE:
+  # GKE Deployment name
+  DEPLOYMENT_NAME:
+  # Docker image name
+  IMAGE_NAME:
+  # Docker image tag
+  IMAGE_TAG: ${{ github.run_number }}
+  # Artifact repository name
+  REPO:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Authenticate with Google Cloud
+        uses: 'google-github-actions/auth@v1'
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          credentials_json: '${{ secrets.GCP_PROD_SA_KEY }}'
+
+      - name: Configure Google Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v1'
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker
+        uses: docker/setup-buildx-action@v1
+
+      - name: Configure Docker registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build and push Docker image
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO}}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+
+      - name: Install gcloud GKE plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin
+
+      - name: Get Kubernetes credentials
+        run: |
+          gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} --zone ${{ env.ZONE }} --project ${{ env.PROJECT_ID }}
+
+      - name: Deploy to GKE
+        run: |
+          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} ${{ env.IMAGE_NAME }}=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO}}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          kubectl rollout restart deployment/${{ env.DEPLOYMENT_NAME }}
