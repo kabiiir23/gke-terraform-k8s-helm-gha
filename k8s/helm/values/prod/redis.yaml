@@ -1,0 +1,4 @@
+nodeSelector:
+  pool: redis
+auth:
+  password: password

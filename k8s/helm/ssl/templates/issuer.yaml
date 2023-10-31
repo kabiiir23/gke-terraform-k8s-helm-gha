@@ -1,0 +1,25 @@
+# issuer-lets-encrypt-staging.yaml
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  {{- if .Values.ingress.tls.enabled }}
+  {{- if .Values.ingress.tls.staging }}
+  name: "{{ .Values.app.name }}-staging-le"
+  {{- else }}
+  name: "{{ .Values.app.name }}-le"
+  {{- end }}
+  {{- end }}
+spec:
+  acme:
+    {{- if .Values.ingress.tls.staging }}
+    server: "https://acme-staging-v02.api.letsencrypt.org/directory"
+    {{- else }}
+    server: "https://acme-v02.api.letsencrypt.org/directory"
+    {{- end }}
+    email: {{ .Values.ingress.tls.email }}
+    privateKeySecretRef:
+      name: {{ .Values.app.name }}-le
+    solvers:
+      - http01:
+          ingress:
+            name: {{ .Values.app.name }}-ingress

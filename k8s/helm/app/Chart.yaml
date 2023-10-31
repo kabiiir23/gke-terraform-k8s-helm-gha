@@ -1,0 +1,4 @@
+apiVersion: v2
+name: deployment-chart
+description: A Helm chart to deploy containerized applications
+version: 0.1.0

@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Values.app.name }}-deployment"
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      {{- toYaml .Values.selectorLabels | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- toYaml .Values.selectorLabels | nindent 8 }}
+    spec:
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      containers:
+        - name: {{ .Values.app.name }}
+          image: "{{ printf "%s-docker.pkg.dev/%s/%s/%s:%s" .Values.image.region .Values.image.projectId .Values.image.repo .Values.image.name .Values.image.tag }}"
+          imagePullPolicy: Always
+          env:
+            {{- range .Values.app.env }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef:
+                  name: myenvsecret
+                  key: {{ .name }}
+            {{- end }}
+          ports:
+            - containerPort: 80

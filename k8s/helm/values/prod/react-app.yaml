@@ -1,0 +1,34 @@
+## Add helm values here
+app:
+  name: react-app-spa
+  env:
+ingress:
+  enabled: true
+  globalStaticIpName:
+  tls:
+    enabled: true
+    staging: false
+  rules:
+    - host: $DOMAIN_NAME
+      path: /
+      port: 80
+  httpsRedirect: false
+image:
+  region: $REGION
+  projectId: $PROJECT_ID
+  repo: $REPO
+  name: $IMAGE_NAME
+  tag: $IMAGE_TAG
+
+selectorLabels:
+  app.kubernetes.io/name: web-app-spa
+
+nodeSelector:
+  cloud.google.com/gke-nodepool: web-app-spa
+
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  cpuUtilization: 80
+# d3mmwmglebbi7b.cloudfront.net CNAME

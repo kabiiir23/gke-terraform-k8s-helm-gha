@@ -1,0 +1,39 @@
+## Add helm values here
+app:
+  name: node-app
+  env:
+    - name: NODE_ENV
+      value: production
+    - name: PORT
+      value: "80"
+managedCertificate:
+  enabled: true
+ingress:
+  globalStaticIpName:
+  tls:
+    enabled: false
+    staging: false
+    email: john@example.com
+  rules:
+    - host: $DOMAIN_NAME
+      path: /
+      port: 80
+  httpsRedirect: false
+image:
+  region: $REGION
+  projectId: $PROJECT_ID
+  repo: $REPO
+  name: $IMAGE_NAME
+  tag: $IMAGE_TAG
+
+selectorLabels:
+  app.kubernetes.io/name: $SELECTOR_LABEL
+
+nodeSelector:
+  cloud.google.com/gke-nodepool: $NODE_POOL_LABEL
+
+hpa:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  cpuUtilization: 80

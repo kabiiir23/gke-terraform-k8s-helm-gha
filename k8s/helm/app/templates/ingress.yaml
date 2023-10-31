@@ -1,0 +1,60 @@
+apiVersion: 'networking.k8s.io/v1'
+kind: 'Ingress'
+metadata:
+  name: {{ .Values.app.name }}-ingress
+  namespace: default
+  annotations:
+    # This tells Google Cloud to create an External Load Balancer to realize this Ingress
+    kubernetes.io/ingress.class: gce
+    # This enables HTTP connections from Internet clients
+    kubernetes.io/ingress.allow-http: 'true'
+
+    {{- if .Values.ingress.globalStaticIpName }}
+    # This tells Google Cloud to associate the External Load Balancer with the static IP
+    kubernetes.io/ingress.global-static-ip-name: {{ .Values.ingress.globalStaticIpName }}
+    {{- end }}
+
+    # networking.gke.io/managed-certificates: "{{ .Values.app.name }}-certificate"
+    # networking.gke.io/v1beta1.FrontendConfig: "https-redirect-config"
+
+    {{- if .Values.ingress.tls.enabled }}
+    # The cert-manager.io/issuer field is set the name of the issuer resource
+    # that is responsible for issuing the TLS certificate for the ingress.
+
+    {{- if .Values.ingress.tls.staging }}
+    cert-manager.io/issuer: "{{ .Values.app.name }}-staging-le"
+    {{- else }}
+    cert-manager.io/issuer: "{{ .Values.app.name }}-le"
+    {{- end }}
+    {{- if .Values.ingress.httpsRedirect }}
+    networking.gke.io/v1beta1.FrontendConfig: "{{ .Values.app.name }}-http-to-https"
+    {{- end }}
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Force SSL redirect
+    {{- end }}
+spec:
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ printf "%s-ssl" .Values.app.name }}
+      hosts:
+        {{- range .Values.ingress.rules }}
+        - {{ .host }}
+        {{- end }}
+  {{- end }}
+  defaultBackend:
+    service:
+      name: "{{ .Values.app.name }}-service"
+      port:
+        number: 80
+  rules:
+    {{- range .Values.ingress.rules }}
+    - http:
+        paths:
+          - path: {{ .path }}
+            backend:
+              service:
+                name: {{ $.Values.app.name }}-service
+                port:
+                  number: {{ .port }}
+            pathType: 'ImplementationSpecific'
+      host: {{ .host }}
+    {{- end }}
