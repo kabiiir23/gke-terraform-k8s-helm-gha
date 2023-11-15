@@ -1,6 +1,5 @@
 k8s/manifest
 
-
 # Terraform gitignore
 /terraform/terraform.tfvars
 /terraform/.terraform
@@ -12,3 +11,6 @@ k8s/manifest
 /terraform/.terraform.lock.hcl
 
 k8s/manifests
+ops
+
+.horusec

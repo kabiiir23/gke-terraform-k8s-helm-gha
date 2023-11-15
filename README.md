@@ -22,6 +22,9 @@ gcloud config set project $PROJECT_ID
 # Get Google Cloud credentials
 gcloud auth application-default login
 
+# Install GKE Auth Plugin component for gcloud
+gcloud components install gke-gcloud-auth-plugin
+
 # Initializes the Terraform working directory and downloads any necessary plugins.
 terraform -chdir=terraform init  -var-file=variables/$ENV.tfvars
 
